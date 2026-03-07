@@ -1,0 +1,5 @@
+﻿customer_id,name,email,city,age
+1,Alice,alice@example.com,New York,31
+2,Bob,,Chicago,28
+3,,,,
+4,David,david@example.com,Boston,45
