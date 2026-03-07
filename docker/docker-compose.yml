@@ -1,0 +1,40 @@
+﻿services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: dataforge_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  pipeline:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+    volumes:
+      - ../:/app
+    command: python scripts/start_pipeline.py
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file:
+      - ../.env
+    depends_on:
+      - postgres
+    volumes:
+      - ../:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn app.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:
