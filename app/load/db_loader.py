@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -93,6 +93,27 @@ class DBLoader:
         self.db.refresh(run)
         return run
 
+    def finalize_pipeline_run_by_id(
+        self,
+        run_id,
+        rows_total: int,
+        rows_valid: int,
+        rows_failed: int,
+        status: str,
+        error_message: str | None = None,
+    ) -> PipelineRun | None:
+        run = self.db.get(PipelineRun, run_id)
+        if run is None:
+            return None
+        return self.finalize_pipeline_run(
+            run=run,
+            rows_total=rows_total,
+            rows_valid=rows_valid,
+            rows_failed=rows_failed,
+            status=status,
+            error_message=error_message,
+        )
+
     def update_source_file_status(self, source_file: SourceFile, status: str) -> SourceFile:
         source_file.status = status
         source_file.processed_at = datetime.utcnow()
@@ -100,3 +121,9 @@ class DBLoader:
         self.db.commit()
         self.db.refresh(source_file)
         return source_file
+
+    def update_source_file_status_by_id(self, source_file_id, status: str) -> SourceFile | None:
+        source_file = self.db.get(SourceFile, source_file_id)
+        if source_file is None:
+            return None
+        return self.update_source_file_status(source_file, status)

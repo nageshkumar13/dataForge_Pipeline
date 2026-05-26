@@ -1,4 +1,4 @@
-﻿import time
+import time
 from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -20,7 +20,17 @@ class IncomingFileEventHandler(FileSystemEventHandler):
     def on_created(self, event: FileSystemEvent) -> None:
         if event.is_directory:
             return
-        path = Path(event.src_path)
+        self._process_if_supported(Path(event.src_path))
+
+    def on_moved(self, event: FileSystemEvent) -> None:
+        if event.is_directory:
+            return
+
+        destination = getattr(event, 'dest_path', None)
+        if destination is not None:
+            self._process_if_supported(Path(destination))
+
+    def _process_if_supported(self, path: Path) -> None:
         if path.suffix.lower() in self.supported:
             self.processor.process(path)
 
