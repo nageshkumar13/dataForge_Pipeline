@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -7,7 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.database.models import PipelineRun, SourceFile, ValidationError
-from app.ingestion.file_handler import reprocess_all_failed, reprocess_file
+from app.ingestion.file_handler import (
+    ReprocessFailedError,
+    reprocess_all_failed,
+    reprocess_file,
+)
 
 
 router = APIRouter()
@@ -87,6 +91,15 @@ def reprocess(payload: ReprocessRequest) -> dict:
             return {'status': 'success', 'file_name': file_name}
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ReprocessFailedError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
-    count = reprocess_all_failed()
-    return {'status': 'success', 'reprocessed_count': count}
+    summary = reprocess_all_failed()
+    status = 'success' if summary.failed_count == 0 else 'partial_success'
+    return {
+        'status': status,
+        'attempted_count': summary.attempted_count,
+        'reprocessed_count': summary.reprocessed_count,
+        'failed_count': summary.failed_count,
+        'failed_files': summary.failed_files,
+    }
